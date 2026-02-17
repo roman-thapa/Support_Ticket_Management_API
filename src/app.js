@@ -1,16 +1,18 @@
-const express = require("express")
-const cors = require("cors")
-const errorHandler = require('./middlewares/error.middleware')
-const healthRoutes = require('./routes/health.routes')
-const userRoutes = require('./models/user/user.routes')
+const express = require("express");
+const cors = require("cors");
+const errorHandler = require("./middlewares/error.middleware");
+const healthRoutes = require("./routes/health.routes");
+const userRoutes = require("./models/user/user.routes");
+const authRoutes = require("./models/auth/auth.routes");
 
-const app = express()
+const app = express();
 
-app.use(cors())
-app.use(express.json())
-app.use('/api', healthRoutes)
-app.use('/api/users', userRoutes)
+app.use(cors());
+app.use(express.json());
+app.use("/api", healthRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/auth", authRoutes);
 
-app.use(errorHandler)
+app.use(errorHandler);
 
-module.exports = app
+module.exports = app;
