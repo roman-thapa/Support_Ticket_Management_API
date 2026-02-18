@@ -1,4 +1,4 @@
-const userService = require('./user.service');
+const userService = require("./user.service");
 
 exports.createUser = async (req, res, next) => {
   try {
@@ -8,7 +8,7 @@ exports.createUser = async (req, res, next) => {
 
     return res.status(201).json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
     next(error);
@@ -23,7 +23,7 @@ exports.getUserById = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
     next(error);
@@ -36,7 +36,27 @@ exports.getAllUsers = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      data: users
+      data: users,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+
+    const user = await userService.getUserById(userId);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (error) {
     next(error);
