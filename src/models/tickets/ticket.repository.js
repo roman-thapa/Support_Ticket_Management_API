@@ -32,3 +32,65 @@ exports.findById = async (id) => {
 
   return result.rows[0];
 };
+
+exports.updateStatus = async (id, status) => {
+  const query = `
+    UPDATE tickets
+    SET status = $1,
+        updated_at = NOW()
+    WHERE id = $2
+    RETURNING *;
+  `;
+
+  const { rows } = await pool.query(query, [status, id]);
+
+  return rows[0];
+};
+
+exports.getTicketsByAssignedUser = async (userId) => {
+  const query = `
+    SELECT *
+    FROM tickets
+    WHERE assigned_to = $1
+    ORDER BY created_at DESC;
+  `;
+
+  const { rows } = await pool.query(query, [userId]);
+  return rows;
+};
+
+exports.getAllTickets = async () => {
+  const query = `
+    SELECT *
+    FROM tickets
+    ORDER BY created_at DESC;
+  `;
+
+  const { rows } = await pool.query(query);
+  return rows;
+};
+
+
+exports.findUserById = async (userId) => {
+  const query = `
+    SELECT id, role
+    FROM users
+    WHERE id = $1;
+  `;
+
+  const { rows } = await pool.query(query, [userId]);
+  return rows[0];
+};
+
+exports.assignTicket = async (ticketId, agentId) => {
+  const query = `
+    UPDATE tickets
+    SET assigned_to = $1,
+        updated_at = NOW()
+    WHERE id = $2
+    RETURNING *;
+  `;
+
+  const { rows } = await pool.query(query, [agentId, ticketId]);
+  return rows[0];
+}; 
