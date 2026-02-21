@@ -101,8 +101,8 @@ exports.assignTicket = async (req, res, next) => {
   try {
     const assignedTicket = await ticketService.assignTicket({
       ticketId: req.params.id,
-      agentId: req.body.agentId,
-      adminId: req.user.userId, // for audit/logging if needed
+      agentId: req.body.assigned_to,
+      adminId: req.user.userId, 
       role: req.user.role
     });
 
@@ -111,6 +111,23 @@ exports.assignTicket = async (req, res, next) => {
       data: assignedTicket
     });
 
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getTicketById = async (req, res, next) => {
+  try {
+    const result = await ticketService.getTicketById(
+      req.params.id,
+      req.user.userId,
+      req.user.role
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
   } catch (error) {
     next(error);
   }

@@ -1,5 +1,6 @@
 const express = require("express");
 const route = express.Router();
+const commentRoutes = require("../comment/comment.routes");
 
 const {
   authenticateUser,
@@ -26,6 +27,8 @@ route.get(
 );
 
 route.get("/:id", authenticateUser, ticketController.getTicketById);
+
+route.use("/:id/comments", commentRoutes);
 
 route.patch(
   "/:id/assign",
