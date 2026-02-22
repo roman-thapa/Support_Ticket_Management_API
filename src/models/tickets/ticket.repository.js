@@ -71,6 +71,7 @@ exports.getAllTickets = async () => {
 };
 
 
+
 exports.findUserById = async (userId) => {
   const query = `
     SELECT id, role
@@ -94,3 +95,8 @@ exports.assignTicket = async (ticketId, agentId) => {
   const { rows } = await pool.query(query, [agentId, ticketId]);
   return rows[0];
 }; 
+
+exports.executeQuery = async (query, values) => {
+  const { rows } = await pool.query(query, values);
+  return rows;
+};

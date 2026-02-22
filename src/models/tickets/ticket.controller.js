@@ -85,12 +85,17 @@ exports.getAssignedTickets = async (req, res, next) => {
 
 exports.getAllTickets = async (req, res, next) => {
   try {
-    const tickets = await ticketService.getAllTickets();
-
-    return res.status(200).json({
-      success: true,
-      data: tickets
+    const result = await ticketService.getTicketsWithQuery({
+      role: req.user.role,
+      userId: req.user.userId,
+      page: req.query.page,
+      limit: req.query.limit,
+      status: req.query.status,
+      priority: req.query.priority,
+      sort: req.query.sort,
     });
+
+    return res.status(200).json(result);
 
   } catch (error) {
     next(error);

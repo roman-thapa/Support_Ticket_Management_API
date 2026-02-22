@@ -166,3 +166,119 @@ exports.getTicketById = async (ticketId, userId, role) => {
     comments,
   };
 };
+
+exports.getTicketsWithQuery = async ({
+  role,
+  userId,
+  page = 1,
+  limit = 10,
+  status,
+  priority,
+  sort,
+}) => {
+  // VALIDATION FIRST
+
+  page = Number(page);
+  limit = Number(limit);
+
+  if (!Number.isInteger(page) || page < 1) {
+    throw { statusCode: 400, message: "Invalid page value" };
+  }
+
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    throw { statusCode: 400, message: "Invalid limit value" };
+  }
+
+  const allowedSortFields = ["created_at", "priority", "status"];
+
+  if (sort) {
+    const field = sort.startsWith("-") ? sort.substring(1) : sort;
+    if (!allowedSortFields.includes(field)) {
+      throw { statusCode: 400, message: "Invalid sort field" };
+    }
+  }
+
+  // Pagination
+  const offset = (page - 1) * limit;
+
+  // WHERE Builder
+  let whereClauses = [];
+  let values = [];
+  let index = 1;
+
+  if (role === "agent") {
+    whereClauses.push(`assigned_to = $${index++}`);
+    values.push(userId);
+  } else if (role !== "admin") {
+    whereClauses.push(`created_by = $${index++}`);
+    values.push(userId);
+  }
+
+  if (status) {
+    whereClauses.push(`status = $${index++}`);
+    values.push(status);
+  }
+
+  if (priority) {
+    whereClauses.push(`priority = $${index++}`);
+    values.push(priority);
+  }
+
+  const whereSQL =
+    whereClauses.length > 0
+      ? `WHERE ${whereClauses.join(" AND ")}`
+      : "";
+
+  // Sorting
+  let orderBy = "created_at DESC";
+
+  if (sort) {
+    let direction = "ASC";
+    let field = sort;
+
+    if (sort.startsWith("-")) {
+      direction = "DESC";
+      field = sort.substring(1);
+    }
+
+    orderBy = `${field} ${direction}`;
+  }
+
+  //  Queries
+  const dataQuery = `
+    SELECT *
+    FROM tickets
+    ${whereSQL}
+    ORDER BY ${orderBy}
+    LIMIT $${index++}
+    OFFSET $${index}
+  `;
+
+  const dataValues = [...values, limit, offset];
+
+  const countQuery = `
+    SELECT COUNT(*) FROM tickets
+    ${whereSQL}
+  `;
+
+  // Repository Calls
+  const rows = await ticketRepository.executeQuery(dataQuery, dataValues);
+  const countResult = await ticketRepository.executeQuery(
+    countQuery,
+    values
+  );
+
+  const total = parseInt(countResult[0].count, 10);
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    status: "success",
+    data: {
+      total,
+      page,
+      limit,
+      totalPages,
+      results: rows,
+    },
+  };
+};
