@@ -1,9 +1,10 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const userRepository = require('../user/user.repository');
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const AppError = require("../utils/appError");
+const userRepository = require("../user/user.repository");
 
 if (!process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET is not defined');
+  throw new Error("JWT_SECRET is not defined");
 }
 
 const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 10;
@@ -12,18 +13,11 @@ const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 10;
    SIGNUP
 ========================= */
 exports.signup = async ({ name, email, password, role }) => {
-  if (!name || !email || !password) {
-    const error = new Error('Name, email and password are required');
-    error.statusCode = 400;
-    throw error;
-  }
 
   const existingUser = await userRepository.findByEmail(email);
 
   if (existingUser) {
-    const error = new Error('Email already exists');
-    error.statusCode = 409;
-    throw error;
+    throw new AppError("Email already exists", 409);
   }
 
   const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -32,7 +26,7 @@ exports.signup = async ({ name, email, password, role }) => {
     name,
     email,
     password: hashedPassword,
-    role
+    role,
   });
 
   return {
@@ -40,46 +34,36 @@ exports.signup = async ({ name, email, password, role }) => {
     name: user.name,
     email: user.email,
     role: user.role,
-    created_at: user.created_at
+    created_at: user.created_at,
   };
 };
-
 
 /* =========================
    LOGIN
 ========================= */
 exports.login = async ({ email, password }) => {
-  if (!email || !password) {
-    const error = new Error('Email and password are required');
-    error.statusCode = 400;
-    throw error;
-  }
 
   const user = await userRepository.findByEmail(email);
 
+  // Do NOT reveal whether email exists (security best practice)
   if (!user) {
-    const error = new Error('Invalid credentials');
-    error.statusCode = 401;
-    throw error;
+    throw new AppError("Invalid credentials", 401);
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
 
   if (!isMatch) {
-    const error = new Error('Invalid credentials');
-    error.statusCode = 401;
-    throw error;
+    throw new AppError("Invalid credentials", 401);
   }
 
   const token = jwt.sign(
     {
       userId: user.id,
-      role: user.role
+      role: user.role,
     },
     process.env.JWT_SECRET,
-    { expiresIn: '1h' }
+    { expiresIn: "1h" }
   );
-
 
   return {
     token,
@@ -87,7 +71,7 @@ exports.login = async ({ email, password }) => {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role
-    }
+      role: user.role,
+    },
   };
 };

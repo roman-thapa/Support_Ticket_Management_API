@@ -1,24 +1,29 @@
 const bcrypt = require('bcrypt');
 const userRepository = require('./user.repository');
+const AppError = require('../../utils/appError');
 
 const ALLOWED_ROLES = ['user', 'agent', 'admin'];
 
 exports.createUser = async (data) => {
   const { name, email, password, role = 'user' } = data;
 
+  // ✅ Required fields
   if (!name || !email || !password) {
-    throw new Error('Name, email and password are required');
+    throw new AppError('Name, email and password are required', 400);
   }
 
+  // ✅ Role validation
   if (!ALLOWED_ROLES.includes(role)) {
-    throw new Error('Invalid role');
+    throw new AppError('Invalid role', 400);
   }
 
+  // ✅ Duplicate email check
   const existingUser = await userRepository.findByEmail(email);
   if (existingUser) {
-    throw new Error('Email already exists');
+    throw new AppError('Email already exists', 409); // Conflict
   }
 
+  // ✅ Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const user = await userRepository.create({
@@ -28,19 +33,18 @@ exports.createUser = async (data) => {
     role
   });
 
-  return user; 
+  return user;
 };
-
 
 exports.getUserById = async (id) => {
   if (!id) {
-    throw new Error('User ID is required');
+    throw new AppError('User ID is required', 400);
   }
 
   const user = await userRepository.findById(id);
 
   if (!user) {
-    throw new Error('User not found');
+    throw new AppError('User not found', 404);
   }
 
   return user;

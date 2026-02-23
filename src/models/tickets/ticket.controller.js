@@ -1,139 +1,130 @@
-const { default: next } = require('next')
-const ticketService = require('./ticket.service')
+const asyncHandler = require("../utils/asyncHandler");
+const AppError = require("../utils/appError");
+const ticketService = require("./ticket.service");
 
-exports.createTicket = async (req, res, next) => {
-    try {
-        const ticket = await ticketService.createTicket({
-            ...req.body,
-            userId: req.user.userId
-        })
-        return res.status(201).json({
-            success: true,
-            data: ticket
-        })
-    } catch (error) {
-        next(error)
-    }
-}
+const {
+  createTicketSchema,
+  updateStatusSchema,
+} = require("../validations/ticket.validation");
 
-exports.getMyTickets = async (req, res, next) => {
-  try {
-    const tickets = await ticketService.getMyTickets(req.user.userId);
+const { querySchema } = require("../validations/query.validation");
 
-    return res.status(200).json({
-      success: true,
-      data: tickets
-    });
 
-  } catch (error) {
-    next(error);
+// Create Ticket
+exports.createTicket = asyncHandler(async (req, res) => {
+  const result = createTicketSchema.safeParse(req.body);
+
+  if (!result.success) {
+    throw new AppError(result.error.errors[0].message, 400);
   }
-};
+
+  const ticket = await ticketService.createTicket({
+    ...result.data,
+    userId: req.user.userId,
+  });
+
+  return res.status(201).json({
+    success: true,
+    data: ticket,
+  });
+});
 
 
-exports.getTicketById = async (req, res, next) => {
-  try {
-    const ticket = await ticketService.getTicketById(
-      req.params.id,
-      req.user.userId  
-    );
+// Get My Tickets (User)
+exports.getMyTickets = asyncHandler(async (req, res) => {
+  const tickets = await ticketService.getMyTickets(req.user.userId);
 
-    res.status(200).json({
-      success: true,
-      data: ticket,
-    });
-  } catch (error) {
-    next(error);
+  return res.status(200).json({
+    success: true,
+    data: tickets,
+  });
+});
+
+
+// Get Ticket By ID (Role-Based Access)
+exports.getTicketById = asyncHandler(async (req, res) => {
+  const result = await ticketService.getTicketById(
+    req.params.id,
+    req.user.userId,
+    req.user.role
+  );
+
+  return res.status(200).json({
+    success: true,
+    data: result,
+  });
+});
+
+
+// Update Ticket Status
+exports.updateTicketStatus = asyncHandler(async (req, res) => {
+  const validation = updateStatusSchema.safeParse(req.body);
+
+  if (!validation.success) {
+    throw new AppError(validation.error.errors[0].message, 400);
   }
-};
+
+  const updatedTicket = await ticketService.updateTicketStatus({
+    ticketId: req.params.id,
+    newStatus: validation.data.status,
+    userId: req.user.userId,
+    role: req.user.role,
+  });
+
+  return res.status(200).json({
+    success: true,
+    data: updatedTicket,
+  });
+});
 
 
-exports.updateTicketStatus = async (req, res, next) => {
-  try {
-    const updatedTicket = await ticketService.updateTicketStatus({
-      ticketId: req.params.id,
-      newStatus: req.body.status,
-      userId: req.user.userId,
-      role: req.user.role
-    });
+// Get Assigned Tickets (Agent)
+exports.getAssignedTickets = asyncHandler(async (req, res) => {
+  const tickets = await ticketService.getAssignedTickets(req.user.userId);
 
-    return res.status(200).json({
-      success: true,
-      data: updatedTicket
-    });
+  return res.status(200).json({
+    success: true,
+    data: tickets,
+  });
+});
 
-  } catch (error) {
-    next(error);
+
+// Get All Tickets (Admin / Query Support)
+exports.getAllTickets = asyncHandler(async (req, res) => {
+  const queryValidation = querySchema.safeParse(req.query);
+
+  if (!queryValidation.success) {
+    throw new AppError(queryValidation.error.errors[0].message, 400);
   }
-}
 
-exports.getAssignedTickets = async (req, res, next) => {
-  try {
-    const tickets = await ticketService.getAssignedTickets(
-      req.user.userId
-    );
+  const result = await ticketService.getTicketsWithQuery({
+    role: req.user.role,
+    userId: req.user.userId,
+    ...queryValidation.data,
+  });
 
-    return res.status(200).json({
-      success: true,
-      data: tickets
-    });
+  return res.status(200).json({
+    success: true,
+    data: result,
+  });
+});
 
-  } catch (error) {
-    next(error);
+
+// Assign Ticket (Admin Only)
+exports.assignTicket = asyncHandler(async (req, res) => {
+  if (!req.body.assigned_to) {
+    throw new AppError("Agent ID is required", 400);
   }
-};
 
-exports.getAllTickets = async (req, res, next) => {
-  try {
-    const result = await ticketService.getTicketsWithQuery({
-      role: req.user.role,
-      userId: req.user.userId,
-      page: req.query.page,
-      limit: req.query.limit,
-      status: req.query.status,
-      priority: req.query.priority,
-      sort: req.query.sort,
-    });
+  const assignedTicket = await ticketService.assignTicket({
+    ticketId: req.params.id,
+    agentId: req.body.assigned_to,
+    adminId: req.user.userId,
+    role: req.user.role,
+  });
 
-    return res.status(200).json(result);
-
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.assignTicket = async (req, res, next) => {
-  try {
-    const assignedTicket = await ticketService.assignTicket({
-      ticketId: req.params.id,
-      agentId: req.body.assigned_to,
-      adminId: req.user.userId, 
-      role: req.user.role
-    });
-
-    return res.status(200).json({
-      success: true,
-      data: assignedTicket
-    });
-
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.getTicketById = async (req, res, next) => {
-  try {
-    const result = await ticketService.getTicketById(
-      req.params.id,
-      req.user.userId,
-      req.user.role
-    );
-
-    return res.status(200).json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  return res.status(200).json({
+    success: true,
+    data: assignedTicket,
+  });
+});

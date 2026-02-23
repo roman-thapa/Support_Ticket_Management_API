@@ -1,35 +1,21 @@
-const authService = require('./auth.service');
+const asyncHandler = require("../utils/asyncHandler");
+const AppError = require("../utils/appError");
+const authService = require("./auth.service");
 
-exports.signup = async (req, res) => {
-  try {
-    const user = await authService.signup(req.body);
+exports.signup = asyncHandler(async (req, res) => {
+  const user = await authService.signup(req.validatedData);
 
-    return res.status(201).json({
-      success: true,
-      data: user
-    });
+  return res.status(201).json({
+    success: true,
+    data: user,
+  });
+});
 
-  } catch (error) {
-    return res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
+exports.login = asyncHandler(async (req, res) => {
+  const loginResult = await authService.login(req.validatedData);
 
-exports.login = async (req, res) => {
-  try {
-    const result = await authService.login(req.body);
-
-    return res.status(200).json({
-      success: true,
-      data: result
-    });
-
-  } catch (error) {
-    return res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
+  return res.status(200).json({
+    success: true,
+    data: loginResult,
+  });
+});

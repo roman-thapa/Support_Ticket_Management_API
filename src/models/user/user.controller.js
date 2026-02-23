@@ -1,64 +1,71 @@
 const userService = require("./user.service");
+const asyncHandler = require("../../utils/asyncHandler");
+const AppError = require("../../utils/appError");
 
-exports.createUser = async (req, res, next) => {
-  try {
-    const { body } = req;
+const {
+  createUserSchema,
+  idParamSchema,
+} = require("../../validations/user.validation");
 
-    const user = await userService.createUser(body);
 
-    return res.status(201).json({
-      success: true,
-      data: user,
-    });
-  } catch (error) {
-    next(error);
+// Create User (Admin)
+exports.createUser = asyncHandler(async (req, res) => {
+  const validation = createUserSchema.safeParse(req.body);
+
+  if (!validation.success) {
+    throw new AppError(validation.error.errors[0].message, 400);
   }
-};
 
-exports.getUserById = async (req, res, next) => {
-  try {
-    const { id } = req.params;
+  const user = await userService.createUser(validation.data);
 
-    const user = await userService.getUserById(id);
+  return res.status(201).json({
+    success: true,
+    data: user,
+  });
+});
 
-    return res.status(200).json({
-      success: true,
-      data: user,
-    });
-  } catch (error) {
-    next(error);
+
+// Get User By ID (Admin)
+exports.getUserById = asyncHandler(async (req, res) => {
+  const validation = idParamSchema.safeParse(req.params);
+
+  if (!validation.success) {
+    throw new AppError(validation.error.errors[0].message, 400);
   }
-};
 
-exports.getAllUsers = async (req, res, next) => {
-  try {
-    const users = await userService.getAllUsers();
+  const user = await userService.getUserById(validation.data.id);
 
-    return res.status(200).json({
-      success: true,
-      data: users,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  return res.status(200).json({
+    success: true,
+    data: user,
+  });
+});
 
-exports.getProfile = async (req, res, next) => {
-  try {
-    const userId = req.user.userId;
 
-    const user = await userService.getUserById(userId);
+// Get All Users (Admin)
+exports.getAllUsers = asyncHandler(async (req, res) => {
+  const users = await userService.getAllUsers();
 
-    return res.status(200).json({
-      success: true,
-      data: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  return res.status(200).json({
+    success: true,
+    data: users,
+  });
+});
+
+
+// Get Profile (Logged-in User)
+exports.getProfile = asyncHandler(async (req, res) => {
+  const userId = req.user.userId;
+
+  const user = await userService.getUserById(userId);
+
+  return res.status(200).json({
+    success: true,
+    data: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  });
+});

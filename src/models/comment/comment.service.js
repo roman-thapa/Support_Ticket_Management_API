@@ -1,31 +1,26 @@
+const AppError = require("../utils/appError");
 const commentRepository = require("./comment.repository");
 const ticketRepository = require("../tickets/ticket.repository");
 
 exports.createComment = async ({ ticketId, userId, message }) => {
   // A️⃣ Validate message
   if (!message || message.trim() === "") {
-    const error = new Error("Comment message is required");
-    error.statusCode = 400;
-    throw error;
+    throw new AppError("Comment message is required", 400);
   }
 
-  // A️⃣ Verify Ticket Exists
+  // B️⃣ Verify Ticket Exists
   const ticket = await ticketRepository.findById(ticketId);
 
   if (!ticket) {
-    const error = new Error("Ticket not found");
-    error.statusCode = 404;
-    throw error;
+    throw new AppError("Ticket not found", 404);
   }
 
-  // B️⃣ Check Ticket Status
+  // C️⃣ Check Ticket Status
   if (ticket.status === "closed") {
-    const error = new Error("Cannot comment on a closed ticket");
-    error.statusCode = 400;
-    throw error;
+    throw new AppError("Cannot comment on a closed ticket", 400);
   }
 
-  // C️⃣ Create Comment
+  // D️⃣ Create Comment
   const comment = await commentRepository.createComment({
     ticketId,
     userId,
