@@ -1,5 +1,4 @@
-const asyncHandler = require("../utils/asyncHandler");
-const AppError = require("../utils/appError");
+const asyncHandler = require("../../utils/asyncHandler");
 const authService = require("./auth.service");
 
 exports.signup = asyncHandler(async (req, res) => {

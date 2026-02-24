@@ -1,13 +1,14 @@
-const asyncHandler = require("../utils/asyncHandler");
-const AppError = require("../utils/appError");
+const asyncHandler = require("../../utils/asyncHandler");
+const AppError = require("../../utils/appError");
 const ticketService = require("./ticket.service");
 
 const {
   createTicketSchema,
   updateStatusSchema,
-} = require("../validations/ticket.validation");
+  assignTicketSchema,
+} = require("../../validations/ticket.validation");
 
-const { querySchema } = require("../validations/query.validation");
+const { querySchema } = require("../../validations/query.validation");
 
 
 // Create Ticket
@@ -112,13 +113,15 @@ exports.getAllTickets = asyncHandler(async (req, res) => {
 
 // Assign Ticket (Admin Only)
 exports.assignTicket = asyncHandler(async (req, res) => {
-  if (!req.body.assigned_to) {
-    throw new AppError("Agent ID is required", 400);
+  const validation = assignTicketSchema.safeParse(req.body);
+
+  if (!validation.success) {
+    throw new AppError(validation.error.errors[0].message, 400);
   }
 
   const assignedTicket = await ticketService.assignTicket({
     ticketId: req.params.id,
-    agentId: req.body.assigned_to,
+    agentId: validation.data.assigned_to,
     adminId: req.user.userId,
     role: req.user.role,
   });

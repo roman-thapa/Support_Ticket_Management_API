@@ -96,7 +96,86 @@ exports.assignTicket = async (ticketId, agentId) => {
   return rows[0];
 }; 
 
-exports.executeQuery = async (query, values) => {
-  const { rows } = await pool.query(query, values);
-  return rows;
+exports.getTicketsWithFilters = async ({
+  role,
+  userId,
+  page,
+  limit,
+  status,
+  priority,
+  sort,
+}) => {
+  const offset = (page - 1) * limit;
+
+  let whereClauses = [];
+  let values = [];
+  let index = 1;
+
+  // Role-based filtering
+  if (role === "agent") {
+    whereClauses.push(`assigned_to = $${index++}`);
+    values.push(userId);
+  } else if (role !== "admin") {
+    whereClauses.push(`created_by = $${index++}`);
+    values.push(userId);
+  }
+
+  if (status) {
+    whereClauses.push(`status = $${index++}`);
+    values.push(status);
+  }
+
+  if (priority) {
+    whereClauses.push(`priority = $${index++}`);
+    values.push(priority);
+  }
+
+  const whereSQL =
+    whereClauses.length > 0
+      ? `WHERE ${whereClauses.join(" AND ")}`
+      : "";
+
+  let orderBy = "created_at DESC";
+
+  if (sort) {
+    let direction = "ASC";
+    let field = sort;
+
+    if (sort.startsWith("-")) {
+      direction = "DESC";
+      field = sort.substring(1);
+    }
+
+    orderBy = `${field} ${direction}`;
+  }
+
+  const dataQuery = `
+    SELECT *
+    FROM tickets
+    ${whereSQL}
+    ORDER BY ${orderBy}
+    LIMIT $${index++}
+    OFFSET $${index}
+  `;
+
+  const countQuery = `
+    SELECT COUNT(*) FROM tickets
+    ${whereSQL}
+  `;
+
+  const dataValues = [...values, limit, offset];
+
+  const { rows } = await pool.query(dataQuery, dataValues);
+  const countResult = await pool.query(countQuery, values);
+
+  const total = parseInt(countResult.rows[0].count, 10);
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    total,
+    page,
+    limit,
+    totalPages,
+    results: rows,
+  };
 };

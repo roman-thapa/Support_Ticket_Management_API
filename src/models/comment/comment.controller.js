@@ -1,10 +1,10 @@
-const asyncHandler = require("../utils/asyncHandler");
-const AppError = require("../utils/appError");
+const asyncHandler = require("../../utils/asyncHandler");
+const AppError = require("../../utils/appError");
 const commentService = require("./comment.service");
 
 const {
   createCommentSchema,
-} = require("../validations/comment.validation");
+} = require("../../validations/comment.validation");
 
 exports.createComment = asyncHandler(async (req, res) => {
   const result = createCommentSchema.safeParse(req.body);

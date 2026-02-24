@@ -13,7 +13,12 @@ const updateStatusSchema = z.object({
   status: statusEnum,
 });
 
+const assignTicketSchema = z.object({
+  assigned_to: z.string().uuid("Valid agent ID is required"),
+});
+
 module.exports = {
   createTicketSchema,
   updateStatusSchema,
+  assignTicketSchema,
 };

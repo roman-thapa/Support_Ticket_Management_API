@@ -1,4 +1,4 @@
-const AppError = require("../utils/appError");
+const AppError = require("../../utils/appError");
 const ticketRepository = require("./ticket.repository");
 const commentRepository = require("../comment/comment.repository");
 
@@ -12,13 +12,6 @@ const allowedTransitions = {
    CREATE TICKET
 ========================= */
 exports.createTicket = async ({ title, description, priority, userId }) => {
-  if (!title || !description || !priority) {
-    throw new AppError(
-      "title, description and priority are required",
-      400
-    );
-  }
-
   return await ticketRepository.createTicket({
     title,
     description,
@@ -188,11 +181,7 @@ exports.getTicketsWithQuery = async ({
     throw new AppError("Invalid limit value", 400);
   }
 
-  const allowedSortFields = [
-    "created_at",
-    "priority",
-    "status",
-  ];
+  const allowedSortFields = ["created_at", "priority", "status"];
 
   if (sort) {
     const field = sort.startsWith("-")
@@ -204,88 +193,13 @@ exports.getTicketsWithQuery = async ({
     }
   }
 
-  const offset = (page - 1) * limit;
-
-  let whereClauses = [];
-  let values = [];
-  let index = 1;
-
-  if (role === "agent") {
-    whereClauses.push(`assigned_to = $${index++}`);
-    values.push(userId);
-  } else if (role !== "admin") {
-    whereClauses.push(`created_by = $${index++}`);
-    values.push(userId);
-  }
-
-  if (status) {
-    whereClauses.push(`status = $${index++}`);
-    values.push(status);
-  }
-
-  if (priority) {
-    whereClauses.push(`priority = $${index++}`);
-    values.push(priority);
-  }
-
-  const whereSQL =
-    whereClauses.length > 0
-      ? `WHERE ${whereClauses.join(" AND ")}`
-      : "";
-
-  let orderBy = "created_at DESC";
-
-  if (sort) {
-    let direction = "ASC";
-    let field = sort;
-
-    if (sort.startsWith("-")) {
-      direction = "DESC";
-      field = sort.substring(1);
-    }
-
-    orderBy = `${field} ${direction}`;
-  }
-
-  const dataQuery = `
-    SELECT *
-    FROM tickets
-    ${whereSQL}
-    ORDER BY ${orderBy}
-    LIMIT $${index++}
-    OFFSET $${index}
-  `;
-
-  const dataValues = [...values, limit, offset];
-
-  const countQuery = `
-    SELECT COUNT(*) FROM tickets
-    ${whereSQL}
-  `;
-
-  const rows =
-    await ticketRepository.executeQuery(
-      dataQuery,
-      dataValues
-    );
-
-  const countResult =
-    await ticketRepository.executeQuery(
-      countQuery,
-      values
-    );
-
-  const total = parseInt(countResult[0].count, 10);
-  const totalPages = Math.ceil(total / limit);
-
-  return {
-    status: "success",
-    data: {
-      total,
-      page,
-      limit,
-      totalPages,
-      results: rows,
-    },
-  };
+  return await ticketRepository.getTicketsWithFilters({
+    role,
+    userId,
+    page,
+    limit,
+    status,
+    priority,
+    sort,
+  });
 };

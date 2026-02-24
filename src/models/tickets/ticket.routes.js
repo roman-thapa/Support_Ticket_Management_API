@@ -6,9 +6,25 @@ const {
   authenticateUser,
   authorizeRoles,
 } = require("../../middlewares/auth.middleware");
+
+const validate = require("../../middlewares/validate");
+
+const {
+  createTicketSchema,
+  updateStatusSchema,
+  assignTicketSchema,
+} = require("../../validations/ticket.validation");
+
+const { querySchema } = require("../../validations/query.validation");
+
 const ticketController = require("./ticket.controller");
 
-route.post("/", authenticateUser, ticketController.createTicket);
+route.post(
+  "/",
+  authenticateUser,
+  validate(createTicketSchema),
+  ticketController.createTicket
+);
 
 route.get("/my", authenticateUser, ticketController.getMyTickets);
 
@@ -23,6 +39,7 @@ route.get(
   "/",
   authenticateUser,
   authorizeRoles("admin"),
+  validate(querySchema, "query"),
   ticketController.getAllTickets
 );
 
@@ -34,12 +51,14 @@ route.patch(
   "/:id/assign",
   authenticateUser,
   authorizeRoles("admin"),
+  validate(assignTicketSchema),
   ticketController.assignTicket
 );
 
 route.patch(
   "/:id/status",
   authenticateUser,
+  validate(updateStatusSchema),
   ticketController.updateTicketStatus
 );
 

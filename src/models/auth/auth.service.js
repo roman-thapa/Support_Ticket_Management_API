@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const AppError = require("../utils/appError");
+const AppError = require("../../utils/appError");
 const userRepository = require("../user/user.repository");
 
 if (!process.env.JWT_SECRET) {
@@ -45,7 +45,6 @@ exports.login = async ({ email, password }) => {
 
   const user = await userRepository.findByEmail(email);
 
-  // Do NOT reveal whether email exists (security best practice)
   if (!user) {
     throw new AppError("Invalid credentials", 401);
   }
@@ -62,7 +61,7 @@ exports.login = async ({ email, password }) => {
       role: user.role,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "1h" }
+    { expiresIn: "2h" }
   );
 
   return {

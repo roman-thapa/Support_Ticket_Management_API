@@ -36,13 +36,15 @@ exports.getCommentsByTicketId = async (ticketId) => {
   return rows;
 };
 
-countAgentComments = async (ticketId, agentId) => {
+exports.countAgentComments = async (ticketId, agentId) => {
   const query = `
     SELECT COUNT(*) 
     FROM comments
     WHERE ticket_id = $1
-      AND created_by = $2
+      AND user_id = $2
   `;
+
   const { rows } = await pool.query(query, [ticketId, agentId]);
+
   return Number(rows[0].count);
 };
