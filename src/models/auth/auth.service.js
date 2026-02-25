@@ -13,7 +13,6 @@ const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 10;
    SIGNUP
 ========================= */
 exports.signup = async ({ name, email, password, role }) => {
-
   const existingUser = await userRepository.findByEmail(email);
 
   if (existingUser) {
@@ -26,7 +25,7 @@ exports.signup = async ({ name, email, password, role }) => {
     name,
     email,
     password: hashedPassword,
-    role,
+    role: "user",
   });
 
   return {
@@ -42,7 +41,6 @@ exports.signup = async ({ name, email, password, role }) => {
    LOGIN
 ========================= */
 exports.login = async ({ email, password }) => {
-
   const user = await userRepository.findByEmail(email);
 
   if (!user) {
